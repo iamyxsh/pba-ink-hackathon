@@ -33,3 +33,35 @@ cargo --version
 # Run unit tests
 cargo test
 ```
+
+# Dextr — Screenshots
+
+> Store images at `docs/img/` so paths below render on GitHub.
+
+- [Dashboard](#dashboard)
+- [Faucet](#faucet)
+- [Add Liquidity](#add-liquidity)
+
+---
+
+## Dashboard
+
+![Dextr Dashboard](docs/img/01-dashboard.png)
+
+_Overview of balances, oracle price, open orders, and LP liquidity._
+
+---
+
+## Faucet
+
+![Faucet](docs/img/02-faucet.png)
+
+_Mint test balances (USDC/WDOT) to any address for quick local testing._
+
+---
+
+## Add Liquidity
+
+![Add Liquidity](docs/img/03-add-liquidity.png)
+
+_Lock user balances into virtual LP pools so orders can match against them._
