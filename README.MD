@@ -46,7 +46,7 @@ cargo test
 
 ## Dashboard
 
-![Dextr Dashboard](docs/img/01-dashboard.png)
+![Dextr Dashboard](docs/img/Dashboard.png)
 
 _Overview of balances, oracle price, open orders, and LP liquidity._
 
@@ -54,7 +54,7 @@ _Overview of balances, oracle price, open orders, and LP liquidity._
 
 ## Faucet
 
-![Faucet](docs/img/02-faucet.png)
+![Faucet](docs/img/Faucet.png)
 
 _Mint test balances (USDC/WDOT) to any address for quick local testing._
 
@@ -62,6 +62,6 @@ _Mint test balances (USDC/WDOT) to any address for quick local testing._
 
 ## Add Liquidity
 
-![Add Liquidity](docs/img/03-add-liquidity.png)
+![Add Liquidity](docs/img/AddLiquidity.png)
 
 _Lock user balances into virtual LP pools so orders can match against them._
