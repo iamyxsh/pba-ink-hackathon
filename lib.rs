@@ -44,10 +44,10 @@ mod dextr_ink_contract {
         total_liquidity_groups: u128,
 
         usdc_balances: Mapping<AccountId, Balance>,
-        weth_balances: Mapping<AccountId, Balance>,
+        wdot_balances: Mapping<AccountId, Balance>,
 
-        oracle_usdc_per_weth: Balance,
-        oracle_weth_per_usdc: Balance,
+        oracle_usdc_per_wdot: Balance,
+        oracle_wdot_per_usdc: Balance,
     }
 
     #[ink::scale_derive(Encode, Decode, TypeInfo)]
@@ -106,9 +106,9 @@ mod dextr_ink_contract {
                 total_liquidity_groups: 0,
                 total_orders: 0,
                 usdc_balances: Mapping::default(),
-                weth_balances: Mapping::default(),
-                oracle_usdc_per_weth: 0,
-                oracle_weth_per_usdc: 0,
+                wdot_balances: Mapping::default(),
+                oracle_usdc_per_wdot: 0,
+                oracle_wdot_per_usdc: 0,
             }
         }
 
@@ -160,11 +160,11 @@ mod dextr_ink_contract {
         }
 
         #[ink(message)]
-        pub fn mint_weth(&mut self, amount: Balance) -> Balance {
+        pub fn mint_wdot(&mut self, amount: Balance) -> Balance {
             let me = self.env().caller();
-            let cur = self.weth_balances.get(me).unwrap_or(0);
+            let cur = self.wdot_balances.get(me).unwrap_or(0);
             let new_bal = cur.saturating_add(amount);
-            self.weth_balances.insert(me, &new_bal);
+            self.wdot_balances.insert(me, &new_bal);
             new_bal
         }
 
@@ -221,17 +221,17 @@ mod dextr_ink_contract {
             let amount_in = ord.amount;
             assert!(amount_in > 0, "amount=0");
 
-            let (usdc, weth) = self.token_addresses();
-            assert!(token_in == usdc || token_in == weth, "unknown token");
+            let (usdc, wdot) = self.token_addresses();
+            assert!(token_in == usdc || token_in == wdot, "unknown token");
 
-            let (token_out, price_used) = if token_in == weth {
-                let p = self.oracle_usdc_per_weth;
-                assert!(p > 0, "oracle price not set (USDC/WETH)");
+            let (token_out, price_used) = if token_in == wdot {
+                let p = self.oracle_usdc_per_wdot;
+                assert!(p > 0, "oracle price not set (USDC/wdot)");
                 (usdc, p)
             } else {
-                let p = self.oracle_weth_per_usdc;
-                assert!(p > 0, "oracle price not set (WETH/USDC)");
-                (weth, p)
+                let p = self.oracle_wdot_per_usdc;
+                assert!(p > 0, "oracle price not set (wdot/USDC)");
+                (wdot, p)
             };
 
             let amount_out = amount_in.saturating_mul(price_used);
@@ -293,7 +293,7 @@ mod dextr_ink_contract {
 
         #[ink(message)]
         pub fn token_addresses(&self) -> (AccountId, AccountId) {
-            (Self::usdc_addr(), Self::weth_addr())
+            (Self::usdc_addr(), Self::wdot_addr())
         }
 
         #[ink(message)]
@@ -303,25 +303,25 @@ mod dextr_ink_contract {
         }
 
         #[ink(message)]
-        pub fn set_oracle_usdc_per_weth(&mut self, p: Balance) {
+        pub fn set_oracle_usdc_per_wdot(&mut self, p: Balance) {
             assert_eq!(self.env().caller(), self.admin, "not admin");
-            self.oracle_usdc_per_weth = p;
+            self.oracle_usdc_per_wdot = p;
         }
 
         #[ink(message)]
-        pub fn set_oracle_weth_per_usdc(&mut self, p: Balance) {
+        pub fn set_oracle_wdot_per_usdc(&mut self, p: Balance) {
             assert_eq!(self.env().caller(), self.admin, "not admin");
-            self.oracle_weth_per_usdc = p;
+            self.oracle_wdot_per_usdc = p;
         }
 
         #[ink(message)]
-        pub fn get_oracle_usdc_per_weth(&self) -> Balance {
-            self.oracle_usdc_per_weth
+        pub fn get_oracle_usdc_per_wdot(&self) -> Balance {
+            self.oracle_usdc_per_wdot
         }
 
         #[ink(message)]
-        pub fn get_oracle_weth_per_usdc(&self) -> Balance {
-            self.oracle_weth_per_usdc
+        pub fn get_oracle_wdot_per_usdc(&self) -> Balance {
+            self.oracle_wdot_per_usdc
         }
 
         #[inline]
@@ -330,19 +330,19 @@ mod dextr_ink_contract {
         }
 
         #[inline]
-        fn weth_addr() -> AccountId {
+        fn wdot_addr() -> AccountId {
             AccountId::from([0x57; 32])
         }
 
         fn is_known_token(token: &AccountId) -> bool {
-            *token == Self::usdc_addr() || *token == Self::weth_addr()
+            *token == Self::usdc_addr() || *token == Self::wdot_addr()
         }
 
         fn balance_of_token(&self, token: &AccountId, owner: &AccountId) -> Balance {
             if *token == Self::usdc_addr() {
                 self.usdc_balances.get(owner).unwrap_or(0)
-            } else if *token == Self::weth_addr() {
-                self.weth_balances.get(owner).unwrap_or(0)
+            } else if *token == Self::wdot_addr() {
+                self.wdot_balances.get(owner).unwrap_or(0)
             } else {
                 0
             }
@@ -351,8 +351,8 @@ mod dextr_ink_contract {
         fn set_balance_of_token(&mut self, token: &AccountId, owner: &AccountId, value: Balance) {
             if *token == Self::usdc_addr() {
                 self.usdc_balances.insert(owner, &value);
-            } else if *token == Self::weth_addr() {
-                self.weth_balances.insert(owner, &value);
+            } else if *token == Self::wdot_addr() {
+                self.wdot_balances.insert(owner, &value);
             }
         }
     }
@@ -385,11 +385,11 @@ mod dextr_ink_contract {
             test::set_caller::<E>(alice());
 
             let mut dex = DextrStorage::new(admin());
-            let (usdc, weth) = dex.token_addresses();
+            let (usdc, wdot) = dex.token_addresses();
 
             assert_eq!(dex.mint_usdc(300_000_000), 300_000_000);
             assert_eq!(
-                dex.mint_weth(2_000_000_000_000_000_000),
+                dex.mint_wdot(2_000_000_000_000_000_000),
                 2_000_000_000_000_000_000
             );
 
@@ -405,52 +405,52 @@ mod dextr_ink_contract {
             assert_eq!(l2.amount, 250_000_000);
             assert_eq!(dex.my_balance(usdc), 50_000_000);
 
-            let lid3 = dex.create_liquidity(weth, 1_500_000_000_000_000_000);
-            let l3 = dex.my_liquidity(weth).unwrap();
+            let lid3 = dex.create_liquidity(wdot, 1_500_000_000_000_000_000);
+            let l3 = dex.my_liquidity(wdot).unwrap();
             assert_eq!(l3.id, lid3);
             assert_eq!(l3.amount, 1_500_000_000_000_000_000);
-            assert_eq!(dex.my_balance(weth), 500_000_000_000_000_000);
+            assert_eq!(dex.my_balance(wdot), 500_000_000_000_000_000);
         }
 
         #[ink::test]
-        fn match_order_weth_to_usdc_success() {
+        fn match_order_wdot_to_usdc_success() {
             use ink::env::test;
             type E = ink::env::DefaultEnvironment;
 
             let mut dex = DextrStorage::new(admin());
-            let (usdc, weth) = dex.token_addresses();
+            let (usdc, wdot) = dex.token_addresses();
 
             let lp = alice();
             let taker = bob();
 
             test::set_caller::<E>(lp);
             dex.mint_usdc(1_000_000);
-            dex.mint_weth(10);
+            dex.mint_wdot(10);
             dex.create_liquidity(usdc, 1_000_000);
-            dex.create_liquidity(weth, 1);
+            dex.create_liquidity(wdot, 1);
 
             test::set_caller::<E>(admin());
 
-            dex.set_oracle_usdc_per_weth(200);
-            dex.set_oracle_weth_per_usdc(1);
+            dex.set_oracle_usdc_per_wdot(200);
+            dex.set_oracle_wdot_per_usdc(1);
 
             test::set_caller::<E>(taker);
-            dex.mint_weth(3);
-            let oid = dex.create_order(weth, 2, 0);
+            dex.mint_wdot(3);
+            let oid = dex.create_order(wdot, 2, 0);
 
             test::set_caller::<E>(admin());
             dex.admin_match_order(oid, lp);
 
             test::set_caller::<E>(taker);
 
-            assert_eq!(dex.my_balance(weth), 1);
+            assert_eq!(dex.my_balance(wdot), 1);
             assert_eq!(dex.my_balance(usdc), 400);
 
             test::set_caller::<E>(lp);
             let lp_usdc = dex.get_liquidity(lp, usdc).unwrap().amount;
-            let lp_weth = dex.get_liquidity(lp, weth).unwrap().amount;
+            let lp_wdot = dex.get_liquidity(lp, wdot).unwrap().amount;
             assert_eq!(lp_usdc, 1_000_000 - 400);
-            assert_eq!(lp_weth, 1 + 2);
+            assert_eq!(lp_wdot, 1 + 2);
 
             test::set_caller::<E>(admin());
             let ord = dex.get_order(oid).unwrap();
@@ -464,11 +464,11 @@ mod dextr_ink_contract {
             type E = ink::env::DefaultEnvironment;
 
             let mut dex = DextrStorage::new(admin());
-            let (_usdc, weth) = dex.token_addresses();
+            let (_usdc, wdot) = dex.token_addresses();
 
             test::set_caller::<E>(bob());
-            dex.mint_weth(2);
-            let oid = dex.create_order(weth, 2, 0);
+            dex.mint_wdot(2);
+            let oid = dex.create_order(wdot, 2, 0);
 
             test::set_caller::<E>(bob());
             dex.admin_match_order(oid, alice());
@@ -481,7 +481,7 @@ mod dextr_ink_contract {
             type E = ink::env::DefaultEnvironment;
 
             let mut dex = DextrStorage::new(admin());
-            let (usdc, weth) = dex.token_addresses();
+            let (usdc, wdot) = dex.token_addresses();
             let lp = alice();
 
             test::set_caller::<E>(lp);
@@ -489,11 +489,11 @@ mod dextr_ink_contract {
             dex.create_liquidity(usdc, 1_000_000);
 
             test::set_caller::<E>(admin());
-            dex.set_oracle_usdc_per_weth(200);
+            dex.set_oracle_usdc_per_wdot(200);
 
             test::set_caller::<E>(bob());
-            dex.mint_weth(2);
-            let oid = dex.create_order(weth, 2, 0);
+            dex.mint_wdot(2);
+            let oid = dex.create_order(wdot, 2, 0);
 
             test::set_caller::<E>(admin());
             dex.admin_match_order(oid, lp);
@@ -506,45 +506,45 @@ mod dextr_ink_contract {
             type E = ink::env::DefaultEnvironment;
 
             let mut dex = DextrStorage::new(admin());
-            let (usdc, weth) = dex.token_addresses();
+            let (usdc, wdot) = dex.token_addresses();
             let lp = alice();
 
             test::set_caller::<E>(lp);
             dex.mint_usdc(100);
-            dex.mint_weth(1);
+            dex.mint_wdot(1);
             dex.create_liquidity(usdc, 100);
-            dex.create_liquidity(weth, 1);
+            dex.create_liquidity(wdot, 1);
 
             test::set_caller::<E>(admin());
-            dex.set_oracle_usdc_per_weth(200);
+            dex.set_oracle_usdc_per_wdot(200);
 
             test::set_caller::<E>(bob());
-            dex.mint_weth(2);
-            let oid = dex.create_order(weth, 2, 0);
+            dex.mint_wdot(2);
+            let oid = dex.create_order(wdot, 2, 0);
 
             test::set_caller::<E>(admin());
             dex.admin_match_order(oid, lp);
         }
 
         #[ink::test]
-        #[should_panic(expected = "oracle price not set (USDC/WETH)")]
-        fn match_order_panics_when_oracle_not_set_for_weth_side() {
+        #[should_panic(expected = "oracle price not set (USDC/wdot)")]
+        fn match_order_panics_when_oracle_not_set_for_wdot_side() {
             use ink::env::test;
             type E = ink::env::DefaultEnvironment;
 
             let mut dex = DextrStorage::new(admin());
-            let (usdc, weth) = dex.token_addresses();
+            let (usdc, wdot) = dex.token_addresses();
             let lp = alice();
 
             test::set_caller::<E>(lp);
             dex.mint_usdc(1_000_000);
-            dex.mint_weth(5);
+            dex.mint_wdot(5);
             dex.create_liquidity(usdc, 1_000_000);
-            dex.create_liquidity(weth, 1);
+            dex.create_liquidity(wdot, 1);
 
             test::set_caller::<E>(bob());
-            dex.mint_weth(2);
-            let oid = dex.create_order(weth, 2, 0);
+            dex.mint_wdot(2);
+            let oid = dex.create_order(wdot, 2, 0);
 
             test::set_caller::<E>(admin());
             dex.admin_match_order(oid, lp);
